@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>온라인 건의함</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    }
+    body {
+      background-color: #f4f6f9;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      background: #ffffff;
+      width: 100%;
+      max-width: 480px;
+      padding: 32px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+    h1 {
+      margin: 0 0 8px 0;
+      font-size: 22px;
+      color: #111827;
+    }
+    p.subtitle {
+      margin: 0 0 24px 0;
+      font-size: 14px;
+      color: #6b7280;
+    }
+    .form-group {
+      margin-bottom: 18px;
+    }
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+    select, input[type="text"], textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #111827;
+      transition: border-color 0.2s;
+    }
+    select:focus, input[type="text"]:focus, textarea:focus {
+      outline: none;
+      border-color: #2563eb;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 130px;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      background-color: #2563eb;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #1d4ed8;
+    }
+    button:disabled {
+      background-color: #93c5fd;
+      cursor: not-allowed;
+    }
+    .success-box {
+      display: none;
+      text-align: center;
+      padding: 20px 0;
+    }
+    .success-box h2 {
+      color: #059669;
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+    .success-box p {
+      color: #4b5563;
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+    .btn-secondary {
+      background-color: #e5e7eb;
+      color: #374151;
+    }
+    .btn-secondary:hover {
+      background-color: #d1d5db;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- 입력 폼 화면 -->
+    <div id="form-section">
+      <h1>📬 온라인 건의함</h1>
+      <p class="subtitle">소중한 의견을 남겨주시면 검토 후 적극 반영하겠습니다.</p>
+
+      <form id="suggestionForm">
+        <div class="form-group">
+          <label for="category">분류</label>
+          <select id="category" name="category">
+            <option value="시설/환경">시설 / 환경 개선</option>
+            <option value="제도/운영">제도 / 운영 건의</option>
+            <option value="칭찬/제안">칭찬 및 아이디어 제안</option>
+            <option value="기타">기타</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="author">작성자 (선택)</label>
+          <input type="text" id="author" name="author" placeholder="비워두시면 '익명'으로 접수됩니다">
+        </div>
+
+        <div class="form-group">
+          <label for="content">건의 내용 *</label>
+          <textarea id="content" name="content" placeholder="내용을 자유롭게 작성해주세요." required></textarea>
+        </div>
+
+        <button type="submit" id="submitBtn">건의사항 제출하기</button>
+      </form>
+    </div>
+
+    <!-- 제출 완료 화면 -->
+    <div id="success-section" class="success-box">
+      <h2>✅ 접수가 완료되었습니다</h2>
+      <p>남겨주신 소중한 의견이 정상적으로 전달되었습니다.</p>
+      <button type="button" class="btn-secondary" onclick="resetForm()">추가로 건의하기</button>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('suggestionForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const formSection = document.getElementById('form-section');
+    const successSection = document.getElementById('success-section');
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const content = document.getElementById('content').value.trim();
+      if (!content) {
+        alert('건의 내용을 입력해주세요.');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = '제출 중...';
+
+      const formData = {
+        category: document.getElementById('category').value,
+        author: document.getElementById('author').value,
+        content: content
+      };
+
+      google.script.run
+        .withSuccessHandler(function(response) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = '건의사항 제출하기';
+
+          if (response.success) {
+            formSection.style.display = 'none';
+            successSection.style.display = 'block';
+          } else {
+            alert('오류가 발생했습니다: ' + response.message);
+          }
+        })
+        .withFailureHandler(function(error) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = '건의사항 제출하기';
+          alert('서버 통신 중 오류가 발생했습니다: ' + error.message);
+        })
+        .submitSuggestion(formData);
+    });
+
+    function resetForm() {
+      form.reset();
+      successSection.style.display = 'none';
+      formSection.style.display = 'block';
+    }
+  </script>
+
+</body>
+</html>  
